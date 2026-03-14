@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>MySearch</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── CONTEÚDO PRINCIPAL ── */
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 600px;
+      padding: 60px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── LOGO — troque o src pela sua imagem ── */
+    .logo {
+      margin-bottom: 32px;
+    }
+
+    .logo img {
+      width: 272px; /* ajuste o tamanho aqui */
+      display: block;
+    }
+
+    /* ── BARRA DE BUSCA ── */
+    .barra {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .barra input {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .barra button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      background: #333;
+      color: #fff;
+      border-radius: 8px;
+    }
+
+    /* ── CATEGORIAS ── */
+    .categorias {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .categorias label {
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    /* ── RESULTADOS ── */
+    #resultados {
+      width: 100%;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .card a {
+      font-weight: bold;
+      text-decoration: none;
+      color: #1a0dab;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .card .info {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    /* ── PAGINAÇÃO ── */
+    #paginacao {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    #paginacao button {
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    #paginacao button.ativa {
+      background: #333;
+      color: #fff;
+      border-color: #333;
+    }
+
+    /* ── RODAPÉ ── */
+    footer {
+      width: 100%;
+      background: #000;
+      color: #fff;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <main>
+
+    <!-- LOGO — troque o src pela sua imagem -->
+    <div class="logo">
+      <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="MySearch" />
+    </div>
+
+    <!-- BARRA DE BUSCA -->
+    <div class="barra">
+      <input id="input" type="text" placeholder="Buscar..." />
+      <button onclick="buscar()">Buscar</button>
+    </div>
+
+    <!-- CATEGORIAS -->
+    <div class="categorias">
+      <label><input type="radio" name="categoria" value="filmes"    checked /> Filmes</label>
+      <label><input type="radio" name="categoria" value="series"           /> Séries</label>
+      <label><input type="radio" name="categoria" value="jogos"            /> Jogos</label>
+      <label><input type="radio" name="categoria" value="softwares"        /> Softwares</label>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div id="resultados"></div>
+    <div id="paginacao"></div>
+
+  </main>
+
+  <!-- RODAPÉ -->
+  <footer>MySearch 2026</footer>
+
+  <script>
+    // ─────────────────────────────────────────────
+    // CATEGORIAS DO THE PIRATE BAY
+    // cat=200 Filmes (todos) | cat=205 TV | cat=400 Jogos PC | cat=300 Apps Windows
+    // Adicione ou troque os números de categoria conforme precisar.
+    // Lista completa: https://thepiratebay.org/browse
+    // ─────────────────────────────────────────────
+    const categorias = {
+      filmes:    200,
+      series:    205,
+      jogos:     400,
+      softwares: 300,
+    };
+
+    // ─────────────────────────────────────────────
+    // PAGINAÇÃO
+    // ─────────────────────────────────────────────
+    const POR_PAGINA = 10; // ← altere o limite aqui
+    let todosResultados = [];
+
+    function renderPagina(pagina) {
+      const container = document.getElementById("resultados");
+      const paginacao = document.getElementById("paginacao");
+      const inicio    = (pagina - 1) * POR_PAGINA;
+      const fatia     = todosResultados.slice(inicio, inicio + POR_PAGINA);
+      const totalPags = Math.ceil(todosResultados.length / POR_PAGINA);
+
+      container.innerHTML = fatia.map(item => `
+        <div class="card">
+          <a href="https://thepiratebay.org/description.php?id=${item.id}" target="_blank">${item.name}</a>
+          <div class="info">
+            ${formatSize(item.size)} &nbsp;·&nbsp;
+            ↑ ${item.seeders} seeds &nbsp;·&nbsp;
+            ↓ ${item.leechers} leechers
+          </div>
+        </div>
+      `).join("");
+
+      paginacao.innerHTML = "";
+      for (let i = 1; i <= totalPags; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        if (i === pagina) btn.classList.add("ativa");
+        btn.addEventListener("click", () => {
+          renderPagina(i);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        paginacao.appendChild(btn);
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // BUSCAR
+    // ─────────────────────────────────────────────
+    async function buscar() {
+      const q         = document.getElementById("input").value.trim();
+      const categoria = document.querySelector("input[name='categoria']:checked").value;
+      const cat       = categorias[categoria];
+      const container = document.getElementById("resultados");
+
+      if (!q) { container.innerHTML = "<p>Digite algo para buscar.</p>"; return; }
+
+      container.innerHTML = "<p>Buscando...</p>";
+      document.getElementById("paginacao").innerHTML = "";
+
+      try {
+        const api   = `https://apibay.org/q.php?q=${encodeURIComponent(q)}&cat=${cat}`;
+        const proxy = "https://corsproxy.io/?";
+        const res   = await fetch(proxy + encodeURIComponent(api));
+        const data = await res.json();
+
+        // API retorna [{"name":"0"}] quando não há resultados
+        if (!data.length || data[0].name === "0") {
+          container.innerHTML = "<p>Nenhum resultado encontrado.</p>";
+          return;
+        }
+
+        todosResultados = data;
+        renderPagina(1);
+
+      } catch {
+        container.innerHTML = "<p>Erro ao buscar. Tente novamente.</p>";
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // FORMATA TAMANHO DO ARQUIVO
+    // ─────────────────────────────────────────────
+    function formatSize(bytes) {
+      const b = parseInt(bytes);
+      if (b > 1073741824) return (b / 1073741824).toFixed(1) + " GB";
+      if (b > 1048576)    return (b / 1048576).toFixed(1) + " MB";
+      return (b / 1024).toFixed(0) + " KB";
+    }
+
+    // Busca ao pressionar Enter
+    document.getElementById("input").addEventListener("keydown", e => {
+      if (e.key === "Enter") buscar();
+    });
+  </script>
+
+</body>
+</html>
