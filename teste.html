@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>MySearch</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 600px;
+      padding: 60px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── LOGO — troque o src pela sua imagem ── */
+    .logo { margin-bottom: 32px; }
+    .logo img { width: 272px; display: block; }
+
+    /* ── BARRA DE BUSCA ── */
+    .barra {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .barra input {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .barra button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      background: #333;
+      color: #fff;
+      border-radius: 8px;
+    }
+
+    /* ── CATEGORIAS ── */
+    .categorias {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .categorias label {
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    /* ── RESULTADOS ── */
+    #resultados { width: 100%; }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .card .fonte {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .card a {
+      font-weight: bold;
+      text-decoration: none;
+      color: #1a0dab;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .card .info {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    /* ── PAGINAÇÃO ── */
+    #paginacao {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    #paginacao button {
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    #paginacao button.ativa {
+      background: #333;
+      color: #fff;
+      border-color: #333;
+    }
+
+    /* ── RODAPÉ ── */
+    footer {
+      width: 100%;
+      background: #000;
+      color: #fff;
+      text-align: center;
+      padding: 16px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <main>
+
+    <!-- LOGO — troque o src pela sua imagem -->
+    <div class="logo">
+      <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="MySearch" />
+    </div>
+
+    <!-- BARRA DE BUSCA -->
+    <div class="barra">
+      <input id="input" type="text" placeholder="Buscar..." />
+      <button onclick="buscar()">Buscar</button>
+    </div>
+
+    <!-- CATEGORIAS -->
+    <div class="categorias">
+      <label><input type="radio" name="categoria" value="filmes"    checked /> Filmes</label>
+      <label><input type="radio" name="categoria" value="series"           /> Séries</label>
+      <label><input type="radio" name="categoria" value="jogos"            /> Jogos</label>
+      <label><input type="radio" name="categoria" value="softwares"        /> Softwares</label>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div id="resultados"></div>
+    <div id="paginacao"></div>
+
+  </main>
+
+  <footer>MySearch 2026</footer>
+
+  <script>
+
+    // ═════════════════════════════════════════════
+    // PROXY — troque a URL para mudar o proxy
+    // "json" → allorigins (retorna JSON)
+    // "text" → corsproxy.io, cors-anywhere, thingproxy
+    //
+    // Opções:
+    //   "https://api.allorigins.win/get?url="
+    //   "https://corsproxy.io/?"
+    //   "https://cors-anywhere.herokuapp.com/"
+    //   "https://thingproxy.freeboard.io/fetch/"
+    // ═════════════════════════════════════════════
+    const PROXY      = "https://api.allorigins.win/get?url=";
+    const PROXY_TIPO = "json"; // "json" ou "text"
+
+
+    // ═════════════════════════════════════════════
+    // CATEGORIAS DO THE PIRATE BAY
+    // Só troque os números se quiser subcategorias.
+    // Lista: https://thepiratebay.org/browse
+    // ═════════════════════════════════════════════
+    const tpbCategorias = {
+      filmes:    200,
+      series:    205,
+      jogos:     400,
+      softwares: 300,
+    };
+
+
+    // ═════════════════════════════════════════════
+    // OUTROS SITES
+    // Adicione sites em cada categoria.
+    // {q} será substituído pelo termo buscado.
+    // ═════════════════════════════════════════════
+    const outrosSites = {
+      filmes: [
+        { nome: "1337x", url: "https://1337x.to/search/{q}/1/" },
+      ],
+      series: [
+        { nome: "1337x", url: "https://1337x.to/search/{q}/1/" },
+      ],
+      jogos: [
+        { nome: "1337x", url: "https://1337x.to/search/{q}/1/" },
+      ],
+      softwares: [
+        { nome: "1337x", url: "https://1337x.to/search/{q}/1/" },
+      ],
+    };
+
+
+    // ─────────────────────────────────────────────
+    // PAGINAÇÃO
+    // ─────────────────────────────────────────────
+    const POR_PAGINA = 10;
+    let todosResultados = [];
+
+    function renderPagina(pagina) {
+      const container = document.getElementById("resultados");
+      const paginacao = document.getElementById("paginacao");
+      const inicio    = (pagina - 1) * POR_PAGINA;
+      const fatia     = todosResultados.slice(inicio, inicio + POR_PAGINA);
+      const totalPags = Math.ceil(todosResultados.length / POR_PAGINA);
+
+      container.innerHTML = fatia.map(item => {
+        if (item.type === "tpb") {
+          return `
+            <div class="card">
+              <div class="fonte">The Pirate Bay</div>
+              <a href="https://thepiratebay.org/description.php?id=${item.id}" target="_blank">${item.name}</a>
+              <div class="info">
+                ${formatSize(item.size)} &nbsp;·&nbsp;
+                ↑ ${item.seeders} seeds &nbsp;·&nbsp;
+                ↓ ${item.leechers} leechers
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="card">
+            <div class="fonte">${item.fonte}</div>
+            <a href="${item.url}" target="_blank">${item.titulo}</a>
+          </div>
+        `;
+      }).join("");
+
+      paginacao.innerHTML = "";
+      for (let i = 1; i <= totalPags; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        if (i === pagina) btn.classList.add("ativa");
+        btn.addEventListener("click", () => {
+          renderPagina(i);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        paginacao.appendChild(btn);
+      }
+    }
+
+
+    // ─────────────────────────────────────────────
+    // BUSCAR
+    // ─────────────────────────────────────────────
+    async function buscar() {
+      const q         = document.getElementById("input").value.trim();
+      const categoria = document.querySelector("input[name='categoria']:checked").value;
+      const container = document.getElementById("resultados");
+
+      if (!q) { container.innerHTML = "<p>Digite algo para buscar.</p>"; return; }
+
+      container.innerHTML = "<p>Buscando...</p>";
+      document.getElementById("paginacao").innerHTML = "";
+      todosResultados = [];
+
+      // 1. TPB via API
+      try {
+        const cat  = tpbCategorias[categoria];
+        const api  = `https://apibay.org/q.php?q=${encodeURIComponent(q)}&cat=${cat}`;
+        const res  = await fetch(PROXY + encodeURIComponent(api));
+        const raw  = await res.json();
+        const data = JSON.parse(raw.contents);
+
+        if (data.length && data[0].name !== "0") {
+          todosResultados.push(...data.map(item => ({ ...item, type: "tpb" })));
+        }
+      } catch (e) {
+        console.warn("TPB erro:", e.message);
+      }
+
+      // 2. Outros sites via proxy
+      const sites = outrosSites[categoria] || [];
+      const lotes = await Promise.all(sites.map(site => buscarSite(site, q)));
+      for (const lote of lotes) todosResultados.push(...lote);
+
+      if (!todosResultados.length) {
+        container.innerHTML = "<p>Nenhum resultado encontrado.</p>";
+        return;
+      }
+
+      renderPagina(1);
+    }
+
+
+    // ─────────────────────────────────────────────
+    // BUSCA EM OUTROS SITES VIA PROXY
+    // ─────────────────────────────────────────────
+    async function buscarSite(site, q) {
+      const urlBusca = site.url.replace("{q}", encodeURIComponent(q));
+      try {
+        const res = await fetch(PROXY + encodeURIComponent(urlBusca));
+        let html;
+
+        if (PROXY_TIPO === "json") {
+          const raw = await res.json();
+          html = raw.contents;
+        } else {
+          html = await res.text();
+        }
+
+        const parser = new DOMParser();
+        const doc    = parser.parseFromString(html, "text/html");
+        return extrairLinks(doc, urlBusca, site.nome);
+      } catch {
+        return [{ type: "site", fonte: site.nome, titulo: "Erro ao carregar " + site.nome, url: urlBusca }];
+      }
+    }
+
+
+    // ─────────────────────────────────────────────
+    // EXTRAI LINKS DO HTML
+    // ─────────────────────────────────────────────
+    function extrairLinks(doc, urlBase, nomeSite) {
+      const origem  = new URL(urlBase).origin;
+      const ignorar = /login|signup|signin|cadastro|conta|account|cart|subscribe|javascript|#|mailto|cookie|privacy|termo|about|contato/i;
+      const vistos  = new Set();
+      const resultados = [];
+
+      const seletores = [
+        "h1 a", "h2 a", "h3 a",
+        "article a", ".result a", ".search-result a",
+        ".post-title a", ".entry-title a",
+        "li a", "a"
+      ];
+
+      for (const seletor of seletores) {
+        for (const a of doc.querySelectorAll(seletor)) {
+          let href  = (a.getAttribute("href") || "").trim();
+          const texto = a.textContent.trim().replace(/\s+/g, " ");
+
+          if (!texto || texto.length < 15) continue;
+          if (ignorar.test(href)) continue;
+          if (href.startsWith("/")) href = origem + href;
+          if (!href.startsWith("http")) continue;
+          if (vistos.has(href)) continue;
+
+          try {
+            const u = new URL(href);
+            if (u.pathname === "/" || u.pathname === "") continue;
+          } catch { continue; }
+
+          vistos.add(href);
+          resultados.push({ type: "site", fonte: nomeSite, titulo: texto.slice(0, 100), url: href });
+          if (resultados.length >= 20) break;
+        }
+        if (resultados.length >= 20) break;
+      }
+
+      if (!resultados.length) {
+        resultados.push({ type: "site", fonte: nomeSite, titulo: "Ver resultados no " + nomeSite, url: urlBase });
+      }
+
+      return resultados;
+    }
+
+
+    // ─────────────────────────────────────────────
+    // FORMATA TAMANHO
+    // ─────────────────────────────────────────────
+    function formatSize(bytes) {
+      const b = parseInt(bytes);
+      if (b > 1073741824) return (b / 1073741824).toFixed(1) + " GB";
+      if (b > 1048576)    return (b / 1048576).toFixed(1) + " MB";
+      return (b / 1024).toFixed(0) + " KB";
+    }
+
+    // Busca ao pressionar Enter
+    document.getElementById("input").addEventListener("keydown", e => {
+      if (e.key === "Enter") buscar();
+    });
+
+  </script>
+
+</body>
+</html>
